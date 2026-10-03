@@ -57,7 +57,7 @@ export function createOpencodeConsoleProvider(options: OpencodeConsoleProviderOp
           },
         },
       });
-      return toCredentials(tokens, undefined);
+      return toCredentials(tokens);
     },
     async refresh(credentials) {
       if (credentials.refresh === '') throw new OAuthError('LOGIN_REQUIRED', 'OpenCode Console has no refresh token for this login');
@@ -67,7 +67,7 @@ export function createOpencodeConsoleProvider(options: OpencodeConsoleProviderOp
         { grant_type: 'refresh_token', refresh_token: credentials.refresh, client_id: CLIENT_ID },
         'LOGIN_REQUIRED',
       );
-      return toCredentials(tokens, credentials.orgId);
+      return toCredentials(tokens, credentials);
     },
     send(request, credentials, upstream) {
       return sendOpencodeConsoleRequest(request, credentials, upstream, consoleUrl);
@@ -185,13 +185,13 @@ export async function opencodeConsoleRouteFor(modelId: string, fetch: FetchFunct
   return { go, npm, baseURL, modelId: typeof model.id === 'string' && model.id !== '' ? model.id : id };
 }
 
-/** A refresh keeps the workspace when the grant omits it. */
-function toCredentials(tokens: TokenResponse, previousOrgId: string | undefined): OpencodeConsoleCredentials {
+/** A refresh keeps the workspace and the refresh token when the grant omits them. */
+function toCredentials(tokens: TokenResponse, previous?: OpencodeConsoleCredentials): OpencodeConsoleCredentials {
   const orgId = (tokens as TokenResponse & { readonly org_id?: unknown }).org_id;
-  const workspace = typeof orgId === 'string' && orgId !== '' ? orgId : previousOrgId;
+  const workspace = typeof orgId === 'string' && orgId !== '' ? orgId : previous?.orgId;
   return {
     access: tokens.access_token,
-    refresh: tokens.refresh_token ?? '',
+    refresh: tokens.refresh_token ?? previous?.refresh ?? '',
     expires: expiryFrom(tokens.expires_in),
     ...(workspace === undefined ? {} : { orgId: workspace }),
   };

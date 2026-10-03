@@ -116,6 +116,12 @@ describe('OpenCode Console login', () => {
     const provider = createOpencodeConsoleProvider({ consoleUrl: `${consoleServer.url}/console` });
     expect(await provider.refresh(login)).toMatchObject({ access: 'st_2', refresh: 'rt_2', orgId: 'org_1' });
   });
+
+  it('keeps the refresh token when a refresh grant omits a new one', async () => {
+    const consoleServer = await serve((_request, response) => json(response, 200, { access_token: 'st_2', token_type: 'Bearer', expires_in: 60 }));
+    const provider = createOpencodeConsoleProvider({ consoleUrl: `${consoleServer.url}/console` });
+    expect(await provider.refresh(login)).toMatchObject({ access: 'st_2', refresh: 'rt_1', orgId: 'org_1' });
+  });
 });
 
 describe('opencodeConsole()', () => {
